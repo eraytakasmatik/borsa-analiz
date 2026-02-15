@@ -263,7 +263,7 @@
 
     // 🔹 Google Login (doğru sürüm)
     function googleLogin() {
-        const provider = new firebase.auth.GoogleAuthProvider();
+        const provider = new Firebase.auth.GoogleAuthProvider();
         auth.signInWithPopup(provider)
             .then((result) => {
                 const user = result.user;
