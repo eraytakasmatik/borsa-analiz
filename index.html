@@ -179,10 +179,9 @@
             <div class="login-section">
                 <h2>Hoş Geldiniz</h2>
                 <p style="margin: 20px 0; color: #666;">Devam etmek için Google hesabınızla giriş yapın</p>
-<button class="login-btn" onclick="googleLogin()">
-    Google ile Giriş Yap
-</button>
-            
+                <button class="login-btn" onclick="googleLogin()">
+                    🔐 Google ile Giriş Yap
+                </button>
             </div>
         </div>
         
@@ -235,7 +234,7 @@
     
     <script>
         // Firebase Config
-        var FirebaseConfig = {
+        const firebaseConfig = {
             apiKey: "AIzaSyA1DHpkhs-sRLL_K3yM0IUm7fFnVGdSXpA",
             authDomain: "eraytakastik.firebaseapp.com",
             projectId: "eraytakastik",
@@ -246,41 +245,30 @@
         
         // Firebase başlat
         firebase.initializeApp(firebaseConfig);
-
-    // 🔹 Firestore ve Auth referanslarını oluştur
-    var db = firebase.firestore();
-    var auth = firebase.auth();
-
-    // 🔹 Cihaz ID oluşturma
-    function getCihazID() {
-        let cihazID = localStorage.getItem('cihaz_id');
-        if (!cihazID) {
-            cihazID = 'WEB_' + Math.random().toString(36).substr(2, 9) + '_' + Date.now();
-            localStorage.setItem('cihaz_id', cihazID);
+        const db = firebase.firestore();
+        const auth = firebase.auth();
+        
+        // Cihaz ID
+        function getCihazID() {
+            let cihazID = localStorage.getItem('cihaz_id');
+            if (!cihazID) {
+                cihazID = 'WEB_' + Math.random().toString(36).substr(2, 9) + '_' + Date.now();
+                localStorage.setItem('cihaz_id', cihazID);
+            }
+            return cihazID;
         }
-        return cihazID;
-    }
-
-    // 🔹 Google Login (doğru sürüm)
-    function googleLogin() {
-        const provider = new Firebase.auth.GoogleAuthProvider();
-        auth.signInWithPopup(provider)
-            .then((result) => {
-                const user = result.user;
-                console.log('✅ Giriş başarılı:', user.email);
-                alert('Hoş geldin ' + user.displayName);
-                // Burada yeni kullanıcıyı Firestore’a ekleyebilirsin:
-                // db.collection('kullanicilar').doc(user.uid).set({ email: user.email });
-            })
-            .catch((error) => {
-                console.error("⚠️ Giriş hatası:", error.message);
-                alert('Giriş hatası: ' + error.message);
-            });
-    }
-
-    // ⚡ En önemli kısım: buton onclick tanısın diye fonksiyonu global yap
-    window.googleLogin = googleLogin;
-
+        
+        // Google Login
+        function googleLogin() {
+            const provider = new firebase.auth.GoogleAuthProvider();
+            auth.signInWithPopup(provider)
+                .then((result) => {
+                    console.log('Giriş başarılı:', result.user.email);
+                })
+                .catch((error) => {
+                    alert('Giriş hatası: ' + error.message);
+                });
+        }
         
         // Logout
         function logout() {
