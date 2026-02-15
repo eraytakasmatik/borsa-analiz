@@ -245,30 +245,41 @@
         
         // Firebase başlat
         firebase.initializeApp(firebaseConfig);
-        const db = firebase.firestore();
-        const auth = firebase.auth();
-        
-        // Cihaz ID
-        function getCihazID() {
-            let cihazID = localStorage.getItem('cihaz_id');
-            if (!cihazID) {
-                cihazID = 'WEB_' + Math.random().toString(36).substr(2, 9) + '_' + Date.now();
-                localStorage.setItem('cihaz_id', cihazID);
-            }
-            return cihazID;
+
+    // 🔹 Firestore ve Auth referanslarını oluştur
+    const db = firebase.firestore();
+    const auth = firebase.auth();
+
+    // 🔹 Cihaz ID oluşturma
+    function getCihazID() {
+        let cihazID = localStorage.getItem('cihaz_id');
+        if (!cihazID) {
+            cihazID = 'WEB_' + Math.random().toString(36).substr(2, 9) + '_' + Date.now();
+            localStorage.setItem('cihaz_id', cihazID);
         }
-        
-        // Google Login
-        function googleLogin() {
-            const provider = new firebase.auth.GoogleAuthProvider();
-            auth.signInWithPopup(provider)
-                .then((result) => {
-                    console.log('Giriş başarılı:', result.user.email);
-                })
-                .catch((error) => {
-                    alert('Giriş hatası: ' + error.message);
-                });
-        }
+        return cihazID;
+    }
+
+    // 🔹 Google Login (doğru sürüm)
+    function googleLogin() {
+        const provider = new firebase.auth.GoogleAuthProvider();
+        auth.signInWithPopup(provider)
+            .then((result) => {
+                const user = result.user;
+                console.log('✅ Giriş başarılı:', user.email);
+                alert('Hoş geldin ' + user.displayName);
+                // Burada yeni kullanıcıyı Firestore’a ekleyebilirsin:
+                // db.collection('kullanicilar').doc(user.uid).set({ email: user.email });
+            })
+            .catch((error) => {
+                console.error("⚠️ Giriş hatası:", error.message);
+                alert('Giriş hatası: ' + error.message);
+            });
+    }
+
+    // ⚡ En önemli kısım: buton onclick tanısın diye fonksiyonu global yap
+    window.googleLogin = googleLogin;
+
         
         // Logout
         function logout() {
