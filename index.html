@@ -233,34 +233,32 @@
     </div>
     
     <script>
-        // ==================== FİREBASE CONFIG ====================
-       
-const firebaseConfig = {
-  apiKey: "AIzaSyA1DHpkhs-sRLL_K3yM0IUm7fFnVGdSXpA",
-  authDomain: "eraytakastik.firebaseapp.com",
-  projectId: "eraytakastik",
-  storageBucket: "eraytakastik.firebasestorage.app",
-  messagingSenderId: "357690428225",
-  appId: "1:357690428225:web:c2e4e410bdce26c0e22fc0"
-};
-
-// Firebase'i başlat
-firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
-const auth = firebase.auth();
-
-// Cihaz ID oluştur
-function getCihazID() {
-    let cihazID = localStorage.getItem('cihaz_id');
-    if (!cihazID) {
-        cihazID = 'WEB_' + Math.random().toString(36).substr(2, 9) + '_' + Date.now();
-        localStorage.setItem('cihaz_id', cihazID);
-    }
-    return cihazID;
-}
+        // Firebase Config
+        const firebaseConfig = {
+            apiKey: "AIzaSyA1DHpkhs-sRLL_K3yM0IUm7fFnVGdSXpA",
+            authDomain: "eraytakastik.firebaseapp.com",
+            projectId: "eraytakastik",
+            storageBucket: "eraytakastik.firebasestorage.app",
+            messagingSenderId: "357690428225",
+            appId: "1:357690428225:web:c2e4e410bdce26c0e22fc0"
+        };
         
-        // ==================== GİRİŞ İŞLEMLERİ ====================
+        // Firebase başlat
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        const auth = firebase.auth();
         
+        // Cihaz ID
+        function getCihazID() {
+            let cihazID = localStorage.getItem('cihaz_id');
+            if (!cihazID) {
+                cihazID = 'WEB_' + Math.random().toString(36).substr(2, 9) + '_' + Date.now();
+                localStorage.setItem('cihaz_id', cihazID);
+            }
+            return cihazID;
+        }
+        
+        // Google Login
         function googleLogin() {
             const provider = new firebase.auth.GoogleAuthProvider();
             auth.signInWithPopup(provider)
@@ -272,6 +270,7 @@ function getCihazID() {
                 });
         }
         
+        // Logout
         function logout() {
             auth.signOut().then(() => {
                 document.getElementById('loginSection').classList.remove('hidden');
@@ -279,22 +278,19 @@ function getCihazID() {
             });
         }
         
-        // Kullanıcı durumunu dinle
+        // Auth state dinle
         auth.onAuthStateChanged((user) => {
             if (user) {
-                // Giriş yapıldı
                 checkUserAuthorization(user);
             } else {
-                // Çıkış yapıldı
                 document.getElementById('loginSection').classList.remove('hidden');
                 document.getElementById('appSection').classList.add('hidden');
             }
         });
         
-        // Kullanıcı yetkisi kontrolü
+        // Kullanıcı yetki kontrolü
         async function checkUserAuthorization(user) {
             try {
-                // Kullanıcı koleksiyonunda var mı?
                 const userDoc = await db.collection('kullanicilar').doc(user.email).get();
                 
                 if (!userDoc.exists) {
@@ -305,60 +301,53 @@ function getCihazID() {
                 
                 const userData = userDoc.data();
                 
-                // Aktif mi?
                 if (!userData.aktif) {
-                    alert('❌ Hesabınız geçici olarak devre dışı. Lütfen yönetici ile iletişime geçin.');
+                    alert('❌ Hesabınız geçici olarak devre dışı.');
                     auth.signOut();
                     return;
                 }
                 
-                // Cihaz kontrolü
                 const cihazID = getCihazID();
                 const kayitliCihaz = userData.cihaz_id;
                 
                 if (kayitliCihaz && kayitliCihaz !== cihazID) {
-                    alert('❌ Bu hesap başka bir cihazda kullanılıyor. Lütfen yetkili cihazınızı kullanın.');
+                    alert('❌ Bu hesap başka bir cihazda kullanılıyor.');
                     auth.signOut();
                     return;
                 }
                 
-                // İlk giriş - cihazı kaydet
                 if (!kayitliCihaz) {
                     await db.collection('kullanicilar').doc(user.email).update({
                         cihaz_id: cihazID,
                         son_giris: firebase.firestore.FieldValue.serverTimestamp()
                     });
                 } else {
-                    // Son giriş güncelle
                     await db.collection('kullanicilar').doc(user.email).update({
                         son_giris: firebase.firestore.FieldValue.serverTimestamp()
                     });
                 }
                 
-                // Ana sayfayı göster
                 showApp(user);
                 
             } catch (error) {
                 console.error('Yetki kontrolü hatası:', error);
-                alert('Bir hata oluştu. Lütfen tekrar deneyin.');
+                alert('Bir hata oluştu: ' + error.message);
                 auth.signOut();
             }
         }
         
-        // ==================== ANA UYGULAMA ====================
-        
+        // Ana uygulama göster
         function showApp(user) {
             document.getElementById('loginSection').classList.add('hidden');
             document.getElementById('appSection').classList.remove('hidden');
             document.getElementById('userEmail').textContent = user.email;
             
-            // Verileri yükle
             loadGunlukTarama();
             loadHaftalikTarama();
             loadHisseler();
         }
         
-        // Günlük taramaları yükle
+        // Günlük tarama yükle
         async function loadGunlukTarama() {
             try {
                 const snapshot = await db.collection('taramalar').doc('gunluk').collection('liste')
@@ -388,12 +377,12 @@ function getCihazID() {
                 container.innerHTML = html;
                 
             } catch (error) {
-                console.error('Günlük tarama yükleme hatası:', error);
+                console.error('Günlük tarama hatası:', error);
                 document.getElementById('gunlukTarama').innerHTML = '<div class="error">Yükleme hatası</div>';
             }
         }
         
-        // Haftalık taramaları yükle
+        // Haftalık tarama yükle
         async function loadHaftalikTarama() {
             try {
                 const snapshot = await db.collection('taramalar').doc('haftalik').collection('liste')
@@ -422,12 +411,12 @@ function getCihazID() {
                 container.innerHTML = html;
                 
             } catch (error) {
-                console.error('Haftalık tarama yükleme hatası:', error);
+                console.error('Haftalık tarama hatası:', error);
                 document.getElementById('haftalikTarama').innerHTML = '<div class="error">Yükleme hatası</div>';
             }
         }
         
-        // Hisse listesini yükle
+        // Hisse listesi yükle
         async function loadHisseler() {
             try {
                 const snapshot = await db.collection('takas_veriler')
@@ -450,11 +439,11 @@ function getCihazID() {
                 });
                 
             } catch (error) {
-                console.error('Hisse listesi yükleme hatası:', error);
+                console.error('Hisse listesi hatası:', error);
             }
         }
         
-        // Hisse analizi
+        // Hisse analiz
         async function hisseAnaliz() {
             const hisse = document.getElementById('hisseSelect').value;
             const container = document.getElementById('hisseDetay');
@@ -467,14 +456,12 @@ function getCihazID() {
             container.innerHTML = '<div class="loading">Yükleniyor...</div>';
             
             try {
-                // TAKAS verisi
                 const takasSnapshot = await db.collection('takas_veriler')
                     .where('hisse', '==', hisse)
                     .orderBy('tarih', 'desc')
                     .limit(5)
                     .get();
                 
-                // AKD verisi
                 const akdSnapshot = await db.collection('akd_veriler')
                     .where('hisse', '==', hisse)
                     .orderBy('tarih', 'desc')
@@ -483,31 +470,21 @@ function getCihazID() {
                 
                 let html = '<div style="margin-top: 15px;">';
                 
-                // TAKAS
                 html += '<h4>📊 TAKAS Verileri</h4>';
                 if (!takasSnapshot.empty) {
                     takasSnapshot.forEach((doc) => {
                         const data = doc.data();
-                        html += `
-                            <div class="tarama-detail">
-                                ${data.tarih}: ${data.net_lot} LOT (${data.kurum})
-                            </div>
-                        `;
+                        html += `<div class="tarama-detail">${data.tarih}: ${data.net_lot} LOT (${data.kurum})</div>`;
                     });
                 } else {
                     html += '<p style="color:#999;">Veri yok</p>';
                 }
                 
-                // AKD
                 html += '<h4 style="margin-top: 15px;">💰 AKD Verileri</h4>';
                 if (!akdSnapshot.empty) {
                     akdSnapshot.forEach((doc) => {
                         const data = doc.data();
-                        html += `
-                            <div class="tarama-detail">
-                                ${data.tarih}: ${data.net_lot} LOT (${data.kurum})
-                            </div>
-                        `;
+                        html += `<div class="tarama-detail">${data.tarih}: ${data.net_lot} LOT (${data.kurum})</div>`;
                     });
                 } else {
                     html += '<p style="color:#999;">Veri yok</p>';
@@ -517,7 +494,7 @@ function getCihazID() {
                 container.innerHTML = html;
                 
             } catch (error) {
-                console.error('Hisse analiz hatası:', error);
+                console.error('Analiz hatası:', error);
                 container.innerHTML = '<div class="error">Analiz hatası</div>';
             }
         }
