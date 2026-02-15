@@ -235,7 +235,7 @@
     
     <script>
         // Firebase Config
-        const firebaseConfig = {
+        var firebaseConfig = {
             apiKey: "AIzaSyA1DHpkhs-sRLL_K3yM0IUm7fFnVGdSXpA",
             authDomain: "eraytakastik.firebaseapp.com",
             projectId: "eraytakastik",
@@ -248,8 +248,8 @@
         firebase.initializeApp(firebaseConfig);
 
     // 🔹 Firestore ve Auth referanslarını oluştur
-    const db = firebase.firestore();
-    const auth = firebase.auth();
+    var db = firebase.firestore();
+    var auth = firebase.auth();
 
     // 🔹 Cihaz ID oluşturma
     function getCihazID() {
