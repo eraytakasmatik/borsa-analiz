@@ -1,0 +1,819 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"="width=device-width, initial-scale=1.0">
+    <title>Borsa Analiz v8.0 FINAL</title>
+    
+    <script src="https://cdn.jsdelivr.net/npm/firebase@9.23.0/firebase-app-compat.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/firebase@9.23.0/firebase-auth-compat.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/firebase@9.23.0/firebase-firestore-compat.js"></script>
+    
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh; padding: 8px;
+        }
+        .container {
+            max-width: 900px; margin: 0 auto; background: white;
+            border-radius: 15px; padding: 8px; box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+        .header { text-align: center; margin-bottom: 8px; }
+        .header h1 { color: #333; font-size: 17px; margin-bottom: 2px; }
+        .header p { color: #666; font-size: 9px; }
+        .login-section { text-align: center; padding: 40px 20px; }
+        .login-btn {
+            background: linear-gradient(135deg, #1B5E20 0%, #2E7D32 100%);
+            color: white; border: none; padding: 15px 40px; font-size: 16px;
+            font-weight: bold; border-radius: 10px; cursor: pointer;
+        }
+        .section {
+            margin-bottom: 10px; padding: 8px; border-radius: 10px; background: #f8f9fa;
+        }
+        .section-title { font-size: 12px; font-weight: bold; margin-bottom: 6px; color: #333; }
+        .loading { text-align: center; padding: 15px; color: #666; font-size: 10px; }
+        .user-info {
+            background: #e3f2fd; padding: 4px 7px; border-radius: 8px; margin-bottom: 7px;
+            display: flex; justify-content: space-between; align-items: center; font-size: 9px;
+        }
+        .logout-btn {
+            background: #d32f2f; color: white; border: none; padding: 3px 6px;
+            border-radius: 5px; cursor: pointer; font-size: 9px;
+        }
+        
+        .mod-tabs {
+            display: flex; gap: 4px; margin-bottom: 8px;
+        }
+        .mod-tab {
+            flex: 1; padding: 7px; border: 2px solid #ddd; background: white;
+            border-radius: 8px; cursor: pointer; font-size: 10px; font-weight: bold;
+            color: #666; text-align: center;
+        }
+        .mod-tab.active { background: #1B5E20; color: white; border-color: #1B5E20; }
+        
+        .search-row { display: flex; gap: 3px; margin-bottom: 6px; }
+        .search-input {
+            flex: 1; padding: 6px; font-size: 11px; border: 2px solid #ddd;
+            border-radius: 8px; text-transform: uppercase;
+        }
+        .search-btn {
+            background: #1B5E20; color: white; border: none; padding: 6px 10px;
+            border-radius: 8px; cursor: pointer; font-size: 10px; font-weight: bold;
+        }
+        .date-row { display: flex; gap: 3px; margin-bottom: 6px; }
+        .date-input {
+            flex: 1; padding: 4px; font-size: 9px; border: 2px solid #ddd; border-radius: 8px;
+        }
+        
+        .kurum-select-container {
+            margin-bottom: 6px;
+        }
+        .kurum-grid {
+            display: grid; grid-template-columns: repeat(4, 1fr); gap: 3px;
+            margin-bottom: 6px; max-height: 180px; overflow-y: auto;
+            background: white; padding: 4px; border-radius: 8px;
+        }
+        .kurum-checkbox {
+            display: flex; align-items: center; gap: 3px; padding: 3px;
+            background: #f5f5f5; border-radius: 4px; font-size: 9px;
+        }
+        .kurum-checkbox input[type="checkbox"] {
+            cursor: pointer; width: 12px; height: 12px;
+        }
+        .kurum-checkbox label {
+            cursor: pointer; flex: 1; font-size: 9px;
+        }
+        
+        .tabs { display: flex; gap: 2px; margin-bottom: 6px; flex-wrap: wrap; }
+        .tab-btn {
+            flex: 1; min-width: 50px; padding: 4px 2px; border: 2px solid #ddd; background: white;
+            border-radius: 8px; cursor: pointer; font-size: 8px; font-weight: bold; color: #666;
+        }
+        .tab-btn.active { background: #1B5E20; color: white; border-color: #1B5E20; }
+        
+        .analiz-card {
+            background: white; padding: 6px; margin-bottom: 3px; border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .analiz-baslik { font-weight: bold; font-size: 10px; margin-bottom: 2px; }
+        .analiz-detay { font-size: 9px; color: #666; margin-bottom: 1px; }
+        
+        .kritik-card {
+            background: #ffebee; padding: 6px; margin-bottom: 3px; border-radius: 8px;
+            border-left: 4px solid #d32f2f;
+        }
+        .kritik-baslik { font-weight: bold; color: #b71c1c; font-size: 10px; margin-bottom: 2px; }
+        
+        .basari-card {
+            background: #e8f5e9; padding: 6px; margin-bottom: 3px; border-radius: 8px;
+            border-left: 4px solid #4caf50;
+        }
+        .basari-baslik { font-weight: bold; color: #1b5e20; font-size: 10px; margin-bottom: 2px; }
+        
+        .uyari-card {
+            background: #fff3e0; padding: 6px; margin-bottom: 3px; border-radius: 8px;
+            border-left: 4px solid #ff9800;
+        }
+        .uyari-baslik { font-weight: bold; color: #e65100; font-size: 10px; margin-bottom: 2px; }
+        
+        .virman-card {
+            background: #fce4ec; padding: 6px; margin-bottom: 3px; border-radius: 8px;
+            border-left: 4px solid #c2185b;
+        }
+        .virman-baslik { font-weight: bold; color: #880e4f; font-size: 10px; margin-bottom: 2px; }
+        
+        .toplama-card {
+            background: #e1f5fe; padding: 6px; margin-bottom: 3px; border-radius: 8px;
+            border-left: 4px solid #0277bd;
+        }
+        .toplama-baslik { font-weight: bold; color: #01579b; font-size: 10px; margin-bottom: 2px; }
+        
+        .kurum-lot { font-size: 10px; font-weight: bold; padding: 2px 4px; border-radius: 4px; }
+        .pozitif { background: #e8f5e9; color: #2e7d32; }
+        .negatif { background: #ffebee; color: #c62828; }
+        
+        .ozet-grid {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 3px; margin-bottom: 6px;
+        }
+        .ozet-item {
+            background: #fff9c4; padding: 4px; border-radius: 6px; border-left: 3px solid #f57f17;
+        }
+        .ozet-label { font-size: 8px; color: #666; }
+        .ozet-value { font-size: 9px; font-weight: bold; color: #333; }
+        
+        details summary { cursor: pointer; }
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Giriş -->
+        <div id="loginSection">
+            <div class="header">
+                <h1>🔥 Borsa Analiz v8.0 FINAL</h1>
+                <p>Tam Kapsamlı Hisse & Kurum Analizi</p>
+            </div>
+            <div class="login-section">
+                <h2>Hoş Geldiniz</h2>
+                <p style="margin: 20px 0; color: #666;">Google hesabınızla giriş yapın</p>
+                <button class="login-btn" onclick="googleLogin()">🔐 Google ile Giriş Yap</button>
+            </div>
+        </div>
+        
+        <!-- Ana Uygulama -->
+        <div id="appSection" class="hidden">
+            <div class="user-info">
+                <span id="userEmail">...</span>
+                <button class="logout-btn" onclick="logout()">Çıkış</button>
+            </div>
+            
+            <div class="header">
+                <h1>📊 Borsa Analiz v8.0</h1>
+                <p>Virman · T+2 · Toplama · Kurum Analizi</p>
+            </div>
+            
+            <!-- Günlük/Haftalık -->
+            <details class="section">
+                <summary class="section-title">🔥 GÜNLÜK TARAMA</summary>
+                <div id="gunlukTarama"><div class="loading">Yükleniyor...</div></div>
+            </details>
+            
+            <details class="section">
+                <summary class="section-title">📅 HAFTALIK TARAMA</summary>
+                <div id="haftalikTarama"><div class="loading">Yükleniyor...</div></div>
+            </details>
+            
+            <!-- Mod Seçimi -->
+            <div class="mod-tabs">
+                <div class="mod-tab active" onclick="switchMode('hisse')" id="modHisse">📊 HİSSE</div>
+                <div class="mod-tab" onclick="switchMode('kurum')" id="modKurum">🏢 KURUM</div>
+            </div>
+            
+            <!-- HİSSE MOD -->
+            <div id="hisseMode" class="section">
+                <div class="section-title">📊 HİSSE ANALİZİ</div>
+                
+                <div class="search-row">
+                    <input 
+                        type="text" 
+                        id="hisseInput" 
+                        class="search-input" 
+                        placeholder="HİSSE"
+                        maxlength="10"
+                        oninput="this.value = this.value.toUpperCase()"
+                        onkeypress="if(event.key==='Enter') hisseAnaliz()"
+                    >
+                    <button class="search-btn" onclick="hisseAnaliz()">🔍</button>
+                </div>
+                
+                <div class="date-row">
+                    <input type="date" id="hisseBaslangic" class="date-input">
+                    <input type="date" id="hisseBitis" class="date-input">
+                </div>
+                
+                <div id="hisseOzet"></div>
+                
+                <div class="tabs" id="hisseTabs" style="display:none">
+                    <button class="tab-btn active" onclick="showHisseTab('ozet')" id="tabOzet">📋</button>
+                    <button class="tab-btn" onclick="showHisseTab('virman')" id="tabVirman">🔄</button>
+                    <button class="tab-btn" onclick="showHisseTab('t2')" id="tabT2">⏱️</button>
+                    <button class="tab-btn" onclick="showHisseTab('toplama')" id="tabToplama">📈</button>
+                    <button class="tab-btn" onclick="showHisseTab('takas')" id="tabTakas">📊</button>
+                    <button class="tab-btn" onclick="showHisseTab('akd')" id="tabAkd">💰</button>
+                </div>
+                
+                <div id="hOzet" style="display:none"></div>
+                <div id="hVirman" style="display:none"></div>
+                <div id="hT2" style="display:none"></div>
+                <div id="hToplama" style="display:none"></div>
+                <div id="hTakas" style="display:none"></div>
+                <div id="hAkd" style="display:none"></div>
+            </div>
+            
+            <!-- KURUM MOD -->
+            <div id="kurumMode" class="section hidden">
+                <div class="section-title">🏢 ÇOKLU KURUM</div>
+                
+                <div class="kurum-select-container">
+                    <div style="font-size:9px;font-weight:bold;margin-bottom:3px;">Seç (çoklu):</div>
+                    <div class="kurum-grid" id="kurumGrid">
+                        <div class="loading">Yükleniyor...</div>
+                    </div>
+                </div>
+                
+                <div class="date-row">
+                    <input type="date" id="kurumBaslangic" class="date-input">
+                    <input type="date" id="kurumBitis" class="date-input">
+                </div>
+                
+                <button class="search-btn" onclick="kurumAnaliz()" style="width:100%;padding:8px;font-size:11px;">
+                    🔍 ANALİZ ET
+                </button>
+                
+                <div id="kurumOzet"></div>
+                <div id="kurumDetay"></div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        if (typeof firebase === 'undefined') {
+            alert('⚠️ Firebase yüklenemedi!');
+            throw new Error('Firebase error');
+        }
+        
+        const firebaseConfig = {
+            apiKey: "AIzaSyA1DHpkhs-sRLL_K3yM0IUm7fFnVGdSXpA",
+            authDomain: "eraytakastik.firebaseapp.com",
+            projectId: "eraytakastik",
+            storageBucket: "eraytakastik.firebasestorage.app",
+            messagingSenderId: "357690428225",
+            appId: "1:357690428225:web:c2e4e410bdce26c0e22fc0"
+        };
+        
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        const auth = firebase.auth();
+        
+        const today = new Date();
+        const monthAgo = new Date(today);
+        monthAgo.setDate(today.getDate() - 30);
+        
+        document.getElementById('hisseBitis').valueAsDate = today;
+        document.getElementById('hisseBaslangic').valueAsDate = monthAgo;
+        document.getElementById('kurumBitis').valueAsDate = today;
+        document.getElementById('kurumBaslangic').valueAsDate = monthAgo;
+        
+        let aktifMod = 'hisse';
+        let aktifHisseTab = 'ozet';
+        
+        function switchMode(mod) {
+            aktifMod = mod;
+            document.getElementById('modHisse').classList.toggle('active', mod === 'hisse');
+            document.getElementById('modKurum').classList.toggle('active', mod === 'kurum');
+            document.getElementById('hisseMode').classList.toggle('hidden', mod !== 'hisse');
+            document.getElementById('kurumMode').classList.toggle('hidden', mod !== 'kurum');
+            
+            if (mod === 'kurum') loadKurumlar();
+        }
+        
+        function showHisseTab(tab) {
+            aktifHisseTab = tab;
+            ['ozet','virman','t2','toplama','takas','akd'].forEach(t => {
+                const btn = document.getElementById('tab' + t.charAt(0).toUpperCase() + t.slice(1));
+                if (btn) btn.classList.toggle('active', t === tab);
+                const div = document.getElementById('h' + t.charAt(0).toUpperCase() + t.slice(1));
+                if (div) div.style.display = t === tab ? 'block' : 'none';
+            });
+        }
+        
+        function getCihazID() {
+            let cihazID = localStorage.getItem('cihaz_id');
+            if (!cihazID) {
+                cihazID = 'WEB_' + Math.random().toString(36).substr(2, 9) + '_' + Date.now();
+                localStorage.setItem('cihaz_id', cihazID);
+            }
+            return cihazID;
+        }
+        
+        function googleLogin() {
+            const provider = new firebase.auth.GoogleAuthProvider();
+            auth.signInWithPopup(provider).catch(error => alert('Giriş hatası: ' + error.message));
+        }
+        
+        function logout() {
+            auth.signOut().then(() => {
+                document.getElementById('loginSection').classList.remove('hidden');
+                document.getElementById('appSection').classList.add('hidden');
+            });
+        }
+        
+        auth.onAuthStateChanged(user => {
+            if (user) checkUserAuthorization(user);
+            else {
+                document.getElementById('loginSection').classList.remove('hidden');
+                document.getElementById('appSection').classList.add('hidden');
+            }
+        });
+        
+        async function checkUserAuthorization(user) {
+            try {
+                const userDoc = await db.collection('kullanicilar').doc(user.email).get();
+                if (!userDoc.exists || !userDoc.data().aktif) {
+                    alert('❌ Erişim yok!');
+                    auth.signOut(); return;
+                }
+                const cihazID = getCihazID();
+                const kayitliCihaz = userDoc.data().cihaz_id;
+                if (kayitliCihaz && kayitliCihaz !== cihazID) {
+                    alert('❌ Başka cihazda kullanılıyor.');
+                    auth.signOut(); return;
+                }
+                await db.collection('kullanicilar').doc(user.email).update({
+                    cihaz_id: cihazID,
+                    son_giris: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                showApp(user);
+            } catch (error) {
+                alert('Hata: ' + error.message);
+                auth.signOut();
+            }
+        }
+        
+        function showApp(user) {
+            document.getElementById('loginSection').classList.add('hidden');
+            document.getElementById('appSection').classList.remove('hidden');
+            document.getElementById('userEmail').textContent = user.email;
+            loadGunlukTarama();
+            loadHaftalikTarama();
+        }
+        
+        async function loadGunlukTarama() {
+            try {
+                const snapshot = await db.collection('taramalar').doc('gunluk').collection('liste').limit(5).get();
+                const container = document.getElementById('gunlukTarama');
+                if (snapshot.empty) {
+                    container.innerHTML = '<p style="text-align:center;color:#999;font-size:9px;padding:8px;">Yok</p>';
+                    return;
+                }
+                let html = '';
+                snapshot.forEach(doc => {
+                    const d = doc.data();
+                    html += `<div class="analiz-card">
+                        <div class="analiz-baslik">${d.hisse}</div>
+                        <div class="analiz-detay">${d.destek || 0}₺ - ${d.direnc || 0}₺</div>
+                    </div>`;
+                });
+                container.innerHTML = html;
+            } catch (e) {
+                document.getElementById('gunlukTarama').innerHTML = '<p style="font-size:9px;color:#999;">Hata</p>';
+            }
+        }
+        
+        async function loadHaftalikTarama() {
+            try {
+                const snapshot = await db.collection('taramalar').doc('haftalik').collection('liste').limit(5).get();
+                const container = document.getElementById('haftalikTarama');
+                if (snapshot.empty) {
+                    container.innerHTML = '<p style="text-align:center;color:#999;font-size:9px;padding:8px;">Yok</p>';
+                    return;
+                }
+                let html = '';
+                snapshot.forEach(doc => {
+                    const d = doc.data();
+                    html += `<div class="analiz-card">
+                        <div class="analiz-baslik">${d.hisse}</div>
+                        <div class="analiz-detay">${d.aciklama || ''}</div>
+                    </div>`;
+                });
+                container.innerHTML = html;
+            } catch (e) {
+                document.getElementById('haftalikTarama').innerHTML = '<p style="font-size:9px;color:#999;">Hata</p>';
+            }
+        }
+        
+        async function loadKurumlar() {
+            try {
+                const kurumlar = new Set();
+                
+                // TÜM kurumları çek
+                const takasSnap = await db.collection('takas_veriler').get();
+                takasSnap.forEach(doc => {
+                    const kurum = doc.data().kurum;
+                    if (kurum && kurum !== 'Bilinmeyen') kurumlar.add(kurum);
+                });
+                
+                const akdSnap = await db.collection('akd_veriler').get();
+                akdSnap.forEach(doc => {
+                    const kurum = doc.data().kurum;
+                    if (kurum && kurum !== 'Bilinmeyen') kurumlar.add(kurum);
+                });
+                
+                const sorted = Array.from(kurumlar).sort();
+                const grid = document.getElementById('kurumGrid');
+                grid.innerHTML = '';
+                
+                sorted.forEach(kurum => {
+                    const div = document.createElement('div');
+                    div.className = 'kurum-checkbox';
+                    div.innerHTML = `
+                        <input type="checkbox" id="kurum_${kurum}" value="${kurum}">
+                        <label for="kurum_${kurum}">${kurum}</label>
+                    `;
+                    grid.appendChild(div);
+                });
+            } catch (e) {
+                document.getElementById('kurumGrid').innerHTML = '<div class="loading">Yüklenemedi</div>';
+            }
+        }
+        
+        // HİSSE ANALİZİ - DETAYLI
+        async function hisseAnaliz() {
+            const hisse = document.getElementById('hisseInput').value.trim().toUpperCase();
+            if (!hisse) { alert('Hisse kodu girin!'); return; }
+            
+            document.getElementById('hisseOzet').innerHTML = '';
+            ['hOzet','hVirman','hT2','hToplama','hTakas','hAkd'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.innerHTML = '<div class="loading">Analiz...</div>';
+            });
+            document.getElementById('hisseTabs').style.display = 'flex';
+            showHisseTab('ozet');
+            
+            const baslangic = document.getElementById('hisseBaslangic').value;
+            const bitis = document.getElementById('hisseBitis').value;
+            
+            try {
+                // VERİ ÇEK
+                let queryTakas = db.collection('takas_veriler').where('hisse', '==', hisse);
+                const takasSnap = await queryTakas.get();
+                const takasDocs = takasSnap.docs.filter(doc => {
+                    const tarih = doc.data().tarih;
+                    if (!tarih) return false;
+                    if (baslangic && tarih < baslangic) return false;
+                    if (bitis && tarih > bitis) return false;
+                    return true;
+                });
+                
+                let queryAkd = db.collection('akd_veriler').where('hisse', '==', hisse);
+                const akdSnap = await queryAkd.get();
+                const akdDocs = akdSnap.docs.filter(doc => {
+                    const tarih = doc.data().tarih;
+                    if (!tarih) return false;
+                    if (baslangic && tarih < baslangic) return false;
+                    if (bitis && tarih > bitis) return false;
+                    return true;
+                });
+                
+                // ANALİZLER
+                const akdTarihKurum = {};
+                akdDocs.forEach(doc => {
+                    const d = doc.data();
+                    const tarih = d.tarih || '';
+                    const kurum = d.kurum || 'Bilinmeyen';
+                    const lot = d.net_lot || 0;
+                    
+                    if (!akdTarihKurum[tarih]) akdTarihKurum[tarih] = {};
+                    if (!akdTarihKurum[tarih][kurum]) akdTarihKurum[tarih][kurum] = {alis: 0, satis: 0};
+                    
+                    if (lot > 0) akdTarihKurum[tarih][kurum].alis += lot;
+                    else if (lot < 0) akdTarihKurum[tarih][kurum].satis += Math.abs(lot);
+                });
+                
+                const takasTarihKurum = {};
+                takasDocs.forEach(doc => {
+                    const d = doc.data();
+                    const tarih = d.tarih || '';
+                    const kurum = d.kurum || 'Bilinmeyen';
+                    const lot = d.net_lot || 0;
+                    
+                    if (!takasTarihKurum[tarih]) takasTarihKurum[tarih] = {};
+                    if (!takasTarihKurum[tarih][kurum]) takasTarihKurum[tarih][kurum] = 0;
+                    takasTarihKurum[tarih][kurum] += lot;
+                });
+                
+                // VİRMAN
+                const virmanlar = [];
+                for (let [tarih, kurumlar] of Object.entries(akdTarihKurum)) {
+                    for (let [kurum, islem] of Object.entries(kurumlar)) {
+                        if (islem.alis > 0 && islem.satis > 0) {
+                            virmanlar.push({tarih, kurum, alis: islem.alis, satis: islem.satis});
+                        }
+                    }
+                }
+                
+                // T+2
+                const t2Uyumsuzluk = [];
+                takasDocs.forEach(doc => {
+                    const takas = doc.data();
+                    if (takas.net_lot <= 0) return;
+                    
+                    const takasTarih = new Date(takas.tarih);
+                    const t2Tarih = new Date(takasTarih);
+                    t2Tarih.setDate(t2Tarih.getDate() + 2);
+                    const t2Str = t2Tarih.toISOString().split('T')[0];
+                    
+                    let satisVar = false;
+                    akdDocs.forEach(akdDoc => {
+                        const akd = akdDoc.data();
+                        if (akd.tarih === t2Str && akd.kurum === takas.kurum && akd.net_lot < 0) {
+                            satisVar = true;
+                        }
+                    });
+                    
+                    if (!satisVar) {
+                        t2Uyumsuzluk.push({
+                            kurum: takas.kurum,
+                            takas_tarih: takas.tarih,
+                            takas_lot: takas.net_lot,
+                            t2_tarih: t2Str
+                        });
+                    }
+                });
+                
+                // TOPLAMA
+                const kurumGunlukAlim = {};
+                akdDocs.forEach(doc => {
+                    const d = doc.data();
+                    if (d.net_lot <= 0) return;
+                    
+                    const kurum = d.kurum || 'Bilinmeyen';
+                    const tarih = d.tarih || '';
+                    
+                    if (!kurumGunlukAlim[kurum]) kurumGunlukAlim[kurum] = {};
+                    if (!kurumGunlukAlim[kurum][tarih]) kurumGunlukAlim[kurum][tarih] = 0;
+                    kurumGunlukAlim[kurum][tarih] += d.net_lot;
+                });
+                
+                const duzenliToplayanlar = [];
+                for (let [kurum, tarihler] of Object.entries(kurumGunlukAlim)) {
+                    const tarihList = Object.keys(tarihler).sort();
+                    if (tarihList.length >= 3) {
+                        const toplamLot = Object.values(tarihler).reduce((a, b) => a + b, 0);
+                        duzenliToplayanlar.push({
+                            kurum: kurum,
+                            gun_sayisi: tarihList.length,
+                            toplam_lot: toplamLot
+                        });
+                    }
+                }
+                
+                // KURUM TOPLAMLARI
+                const takasKurumlar = {};
+                takasDocs.forEach(doc => {
+                    const d = doc.data();
+                    const kurum = d.kurum || 'Bilinmeyen';
+                    if (!takasKurumlar[kurum]) takasKurumlar[kurum] = 0;
+                    takasKurumlar[kurum] += (d.net_lot || 0);
+                });
+                
+                const akdKurumlar = {};
+                akdDocs.forEach(doc => {
+                    const d = doc.data();
+                    const kurum = d.kurum || 'Bilinmeyen';
+                    if (!akdKurumlar[kurum]) akdKurumlar[kurum] = 0;
+                    akdKurumlar[kurum] += (d.net_lot || 0);
+                });
+                
+                // ÖZET
+                let ozetHtml = `<div class="ozet-grid">
+                    <div class="ozet-item">
+                        <div class="ozet-label">Virman</div>
+                        <div class="ozet-value">${virmanlar.length}</div>
+                    </div>
+                    <div class="ozet-item">
+                        <div class="ozet-label">T+2 Uyumsuz</div>
+                        <div class="ozet-value">${t2Uyumsuzluk.length}</div>
+                    </div>
+                    <div class="ozet-item">
+                        <div class="ozet-label">Toplama</div>
+                        <div class="ozet-value">${duzenliToplayanlar.length}</div>
+                    </div>
+                    <div class="ozet-item">
+                        <div class="ozet-label">TAKAS</div>
+                        <div class="ozet-value">${takasDocs.length}</div>
+                    </div>
+                </div>`;
+                document.getElementById('hOzet').innerHTML = ozetHtml;
+                
+                // VİRMAN
+                if (virmanlar.length > 0) {
+                    let html = '';
+                    virmanlar.forEach(v => {
+                        html += `<div class="virman-card">
+                            <div class="virman-baslik">${v.kurum} - ${v.tarih}</div>
+                            <div style="font-size:9px;color:#666;">Alış: ${v.alis.toLocaleString()} | Satış: ${v.satis.toLocaleString()}</div>
+                        </div>`;
+                    });
+                    document.getElementById('hVirman').innerHTML = html;
+                } else {
+                    document.getElementById('hVirman').innerHTML = '<p style="text-align:center;color:#999;padding:10px;font-size:9px;">Yok</p>';
+                }
+                
+                // T+2
+                if (t2Uyumsuzluk.length > 0) {
+                    let html = '';
+                    t2Uyumsuzluk.slice(0, 10).forEach(u => {
+                        html += `<div class="uyari-card">
+                            <div class="uyari-baslik">${u.kurum}</div>
+                            <div style="font-size:8px;color:#666;">TAKAS: ${u.takas_tarih} → ${u.takas_lot.toLocaleString()} LOT</div>
+                            <div style="font-size:8px;color:#c62828;">AKD YOK: ${u.t2_tarih}</div>
+                        </div>`;
+                    });
+                    document.getElementById('hT2').innerHTML = html;
+                } else {
+                    document.getElementById('hT2').innerHTML = '<p style="text-align:center;color:#999;padding:10px;font-size:9px;">Yok</p>';
+                }
+                
+                // TOPLAMA
+                if (duzenliToplayanlar.length > 0) {
+                    let html = '';
+                    duzenliToplayanlar.forEach(d => {
+                        html += `<div class="toplama-card">
+                            <div class="toplama-baslik">${d.kurum} ${hisse} topluyor</div>
+                            <div style="font-size:9px;color:#666;">${d.gun_sayisi} gün → ${d.toplam_lot.toLocaleString()} LOT</div>
+                        </div>`;
+                    });
+                    document.getElementById('hToplama').innerHTML = html;
+                } else {
+                    document.getElementById('hToplama').innerHTML = '<p style="text-align:center;color:#999;padding:10px;font-size:9px;">Yok</p>';
+                }
+                
+                // TAKAS
+                if (Object.keys(takasKurumlar).length > 0) {
+                    const sorted = Object.entries(takasKurumlar).sort((a, b) => Math.abs(b[1]) - Math.abs(a[1]));
+                    let html = '';
+                    sorted.forEach(([kurum, lot]) => {
+                        const cls = lot >= 0 ? 'pozitif' : 'negatif';
+                        const sign = lot >= 0 ? '+' : '';
+                        html += `<div class="analiz-card" style="display:flex;justify-content:space-between;">
+                            <span style="font-size:9px;font-weight:bold;">${kurum}</span>
+                            <span class="kurum-lot ${cls}">${sign}${lot.toLocaleString()}</span>
+                        </div>`;
+                    });
+                    document.getElementById('hTakas').innerHTML = html;
+                } else {
+                    document.getElementById('hTakas').innerHTML = '<p style="text-align:center;color:#999;padding:10px;font-size:9px;">Yok</p>';
+                }
+                
+                // AKD
+                if (Object.keys(akdKurumlar).length > 0) {
+                    const sorted = Object.entries(akdKurumlar).sort((a, b) => Math.abs(b[1]) - Math.abs(a[1]));
+                    let html = '';
+                    sorted.forEach(([kurum, lot]) => {
+                        const cls = lot >= 0 ? 'pozitif' : 'negatif';
+                        const sign = lot >= 0 ? '+' : '';
+                        html += `<div class="analiz-card" style="display:flex;justify-content:space-between;">
+                            <span style="font-size:9px;font-weight:bold;">${kurum}</span>
+                            <span class="kurum-lot ${cls}">${sign}${lot.toLocaleString()}</span>
+                        </div>`;
+                    });
+                    document.getElementById('hAkd').innerHTML = html;
+                } else {
+                    document.getElementById('hAkd').innerHTML = '<p style="text-align:center;color:#999;padding:10px;font-size:9px;">Yok</p>';
+                }
+                
+            } catch (e) {
+                document.getElementById('hOzet').innerHTML = '<div class="kritik-card"><div class="kritik-baslik">Hata: ' + e.message + '</div></div>';
+            }
+        }
+        
+        // KURUM ANALİZİ
+        async function kurumAnaliz() {
+            const checkboxes = document.querySelectorAll('#kurumGrid input[type="checkbox"]:checked');
+            const seciliKurumlar = Array.from(checkboxes).map(cb => cb.value);
+            
+            if (seciliKurumlar.length === 0) {
+                alert('En az 1 kurum seçin!');
+                return;
+            }
+            
+            document.getElementById('kurumOzet').innerHTML = `<div class="basari-card">
+                <div class="basari-baslik">Seçili (${seciliKurumlar.length})</div>
+                <div style="font-size:9px;color:#666;">${seciliKurumlar.join(', ')}</div>
+            </div>`;
+            
+            document.getElementById('kurumDetay').innerHTML = '<div class="loading">Analiz...</div>';
+            
+            const baslangic = document.getElementById('kurumBaslangic').value;
+            const bitis = document.getElementById('kurumBitis').value;
+            
+            try {
+                const hisseData = {};
+                
+                for (let kurum of seciliKurumlar) {
+                    let queryTakas = db.collection('takas_veriler').where('kurum', '==', kurum);
+                    const takasSnap = await queryTakas.get();
+                    const takasDocs = takasSnap.docs.filter(doc => {
+                        const tarih = doc.data().tarih;
+                        if (!tarih) return false;
+                        if (baslangic && tarih < baslangic) return false;
+                        if (bitis && tarih > bitis) return false;
+                        return true;
+                    });
+                    
+                    takasDocs.forEach(doc => {
+                        const d = doc.data();
+                        const hisse = d.hisse;
+                        if (!hisseData[hisse]) hisseData[hisse] = {};
+                        if (!hisseData[hisse][kurum]) hisseData[hisse][kurum] = {takas: 0, akd: 0};
+                        hisseData[hisse][kurum].takas += (d.net_lot || 0);
+                    });
+                    
+                    let queryAkd = db.collection('akd_veriler').where('kurum', '==', kurum);
+                    const akdSnap = await queryAkd.get();
+                    const akdDocs = akdSnap.docs.filter(doc => {
+                        const tarih = doc.data().tarih;
+                        if (!tarih) return false;
+                        if (baslangic && tarih < baslangic) return false;
+                        if (bitis && tarih > bitis) return false;
+                        return true;
+                    });
+                    
+                    akdDocs.forEach(doc => {
+                        const d = doc.data();
+                        const hisse = d.hisse;
+                        if (!hisseData[hisse]) hisseData[hisse] = {};
+                        if (!hisseData[hisse][kurum]) hisseData[hisse][kurum] = {takas: 0, akd: 0};
+                        hisseData[hisse][kurum].akd += (d.net_lot || 0);
+                    });
+                }
+                
+                const ortakAlinan = [];
+                const ortakSatilan = [];
+                
+                for (let [hisse, kurumlar] of Object.entries(hisseData)) {
+                    const kurumSayisi = Object.keys(kurumlar).length;
+                    if (kurumSayisi >= 2) {
+                        const alicilar = [];
+                        const saticilar = [];
+                        
+                        for (let [kurum, data] of Object.entries(kurumlar)) {
+                            const toplam = data.takas + data.akd;
+                            if (toplam > 0) alicilar.push({kurum, lot: toplam});
+                            if (toplam < 0) saticilar.push({kurum, lot: Math.abs(toplam)});
+                        }
+                        
+                        if (alicilar.length >= 2) {
+                            ortakAlinan.push({hisse, kurumlar: alicilar, toplam: alicilar.reduce((s, k) => s + k.lot, 0)});
+                        }
+                        if (saticilar.length >= 2) {
+                            ortakSatilan.push({hisse, kurumlar: saticilar, toplam: saticilar.reduce((s, k) => s + k.lot, 0)});
+                        }
+                    }
+                }
+                
+                let html = '';
+                if (ortakAlinan.length > 0) {
+                    ortakAlinan.sort((a, b) => b.toplam - a.toplam);
+                    html += '<div class="basari-card"><div class="basari-baslik">📊 ORTAK ALINAN</div>';
+                    ortakAlinan.slice(0, 10).forEach(o => {
+                        html += `<div class="analiz-detay"><b>${o.hisse}</b>: ${o.kurumlar.length} kurum (`;
+                        html += o.kurumlar.map(k => `${k.kurum} +${k.lot.toLocaleString()}`).join(', ');
+                        html += ')</div>';
+                    });
+                    html += '</div>';
+                }
+                
+                if (ortakSatilan.length > 0) {
+                    ortakSatilan.sort((a, b) => b.toplam - a.toplam);
+                    html += '<div class="kritik-card"><div class="kritik-baslik">📉 ORTAK SATILAN</div>';
+                    ortakSatilan.slice(0, 10).forEach(o => {
+                        html += `<div class="analiz-detay"><b>${o.hisse}</b>: ${o.kurumlar.length} kurum (`;
+                        html += o.kurumlar.map(k => `${k.kurum} -${k.lot.toLocaleString()}`).join(', ');
+                        html += ')</div>';
+                    });
+                    html += '</div>';
+                }
+                
+                if (!html) html = '<div class="analiz-card"><div class="analiz-baslik">Ortak işlem yok</div></div>';
+                document.getElementById('kurumDetay').innerHTML = html;
+            } catch (e) {
+                document.getElementById('kurumDetay').innerHTML = '<div class="kritik-card"><div class="kritik-baslik">Hata: ' + e.message + '</div></div>';
+            }
+        }
+    </script>
+</body>
+</html>
